@@ -1,59 +1,51 @@
-/*
- * Copyright 2013 Boris Smus. All Rights Reserved.
+export default class VolumeSample {
+    constructor(context, loadSounds, button) {
+        this.context = context;
+        loadSounds(
+            context,
+            this,
+            { buffer: '/music/00_windy soul.mp3' }, 
+            this.onLoaded(button)
+            );
+        this.isPlaying = false;
+    }
 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-import { context, playSound, loadSounds, BufferLoader } from "./shared";
+    onLoaded(button) {
+        button.removeAttribute('disabled');
+    }
 
-export default function VolumeSample() {
-  loadSounds(this, {
-    buffer: '/music/00_windy soul.mp3'
-  }, onLoaded);
-  function onLoaded() {
-    var button = document.querySelector('.bttn01');
-    button.removeAttribute('disabled');
-    // button.innerHTML = 'Play/pause';
-  };
-  this.isPlaying = false;
-};
+    play() {
+        this.gainNode = this.context.createGain();
+        this.source = this.context.createBufferSource();
+        this.source.buffer = this.buffer;
 
-VolumeSample.prototype.play = function() {
-  this.gainNode = context.createGain();
-  this.source = context.createBufferSource();
-  this.source.buffer = this.buffer;
+        // Connect source to a gain node
+        this.source.connect(this.gainNode);
+        // Connect gain node to destination
+        this.gainNode.connect(this.context.destination);
+        // Start playback in a loop
+        this.source.loop = true;
+        this.source[this.source.start ? 'start' : 'noteOn'](0);
+    }
 
-  // Connect source to a gain node
-  this.source.connect(this.gainNode);
-  // Connect gain node to destination
-  this.gainNode.connect(context.destination);
-  // Start playback in a loop
-  this.source.loop = true;
-  this.source[this.source.start ? 'start' : 'noteOn'](0);
-};
+    changeVolume(element) {
+        const volume = element.value;
+        const fraction = parseInt(volume) / parseInt(element.max);
+        // Let's use an x*x curve (x-squared) since simple linear (x) does not
+        // sound as good.
+        this.gainNode.gain.value = fraction * fraction;
+    }
 
-VolumeSample.prototype.changeVolume = function(element) {
-  var volume = element.value;
-  var fraction = parseInt(element.value) / parseInt(element.max);
-  // Let's use an x*x curve (x-squared) since simple linear (x) does not
-  // sound as good.
-  this.gainNode.gain.value = fraction * fraction;
-};
+    stop() {
+        this.source[this.source.stop ? 'stop' : 'noteOff'](0);
+    }
 
-VolumeSample.prototype.stop = function() {
-  this.source[this.source.stop ? 'stop' : 'noteOff'](0);
-};
-
-VolumeSample.prototype.toggle = function() {
-  this.isPlaying ? this.stop() : this.play();
-  this.isPlaying = !this.isPlaying;
-};
+    toggle() {
+        if (this.isPlaying) {
+        this.stop();
+        } else {
+        this.play();
+        }
+        this.isPlaying = !this.isPlaying;
+    }
+}

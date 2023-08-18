@@ -1,17 +1,15 @@
 import { React, useState, useEffect, useRef } from 'react'
 import { Button } from '@mui/material'
-import useScript from './usescript'
-import VolumeSample from '../utils/volume-sample'
-import { initVolumeSample, context } from '../utils/shared'
+import VolumeSample from '../utils/volume-sample';
+import { loadSounds, playSound } from '../utils/shared';
 import '../App.css'
 
-export default function Volume(){
+export default function Volume({context}){
 
-    const shared = '/shared.js'
     const [ volume, setVolume ] = useState(null);
     const [ value , setValue ] = useState(100);
     const inputRef = useRef();
-    // const [ loading, error ] = useScript(shared, 'afterbegin');
+    const bttnRef = useRef();
 
     const handleClick = () => {
         if(volume !== undefined && volume !== null){
@@ -27,28 +25,24 @@ export default function Volume(){
     }
 
     useEffect(()=>{
-            initVolumeSample();
-            if(context.state !== 'suspended'){
 
-        }
-        setVolume(() => new VolumeSample());
+        setVolume(() => new VolumeSample(context, loadSounds, bttnRef.current));
 
-        console.log(volume)
     },[])
 
     return(
         <>
-            <div id="overlay">Click to play</div>
+            <h3 
+                className='my-3'
+                style={{ marginBottom : "1.5rem" }}
+            >볼륨 컨트롤러</h3>
             <Button 
                 onClick={handleClick}
-                className='bttn01'
-                variant="contained" 
-                style={{ marginBottom : '3rem' }}
+                variant="contained"
+                ref={bttnRef}
+                style={{ marginBottom : '1.5rem' }}
             >Play / Pause</Button>
-            {/* <audio 
-                src='./music/00_windy soul.mp3'
-                controls
-            ></audio> */}
+
             <input 
                 type="range"
                 ref={inputRef}
@@ -56,6 +50,7 @@ export default function Volume(){
                 max={100}
                 step={0.02}
                 value={value}
+                style={{ display : "block", margin : '0 auto' }}
                 onMouseUp={()=>setValue(inputRef.current.value)}
                 onTouchEnd={()=>setValue(inputRef.current.value)}
                 onChange={handleChange}
