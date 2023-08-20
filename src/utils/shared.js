@@ -1,4 +1,4 @@
-function playSound(context, buffer) {
+function playSound(context, buffer, time) {
   const source = context.createBufferSource();
   source.buffer = buffer;
   source.connect(context.destination);
@@ -14,21 +14,27 @@ function loadSounds(context, obj, soundMap, callback) {
       names.push(name);
       paths.push(path);
   }
-  let bufferLoader = new BufferLoader(context, paths, function(bufferList) {
+  let bufferLoader = new BufferLoader(context, paths, function(bufferList) { // bufferList = this.onLoad 39번 라인
       for (let i = 0; i < bufferList.length; i++) {
           let buffer = bufferList[i];
           let name = names[i];
-          obj[name] = buffer;
+          obj[name] = buffer; // obj === this
       }
       if (callback) {
           callback();
       }
   });
   bufferLoader.load();
+
+  console.log(bufferLoader.bufferList)
+  return bufferLoader.bufferList;
 };
 
     class BufferLoader {
       constructor(context, urlList, callback) {
+
+        console.log(urlList)
+
           this.context = context;
           this.urlList = urlList;
           this.onload = callback;
@@ -52,8 +58,11 @@ function loadSounds(context, obj, soundMap, callback) {
                           return;
                       }
                       this.bufferList[index] = buffer;
+
+                      // console.log(buffer)
+
                       if (++this.loadCount === this.urlList.length)
-                          this.onload(this.bufferList);
+                          this.onload(this.bufferList); // constructor 3번째 callback 에 파라미터로 bufferlist 전달
                   },
                   (error) => {
                       console.error('decodeAudioData error', error);
@@ -75,4 +84,4 @@ function loadSounds(context, obj, soundMap, callback) {
       }
     };
 
-export { loadSounds, playSound }
+export { loadSounds, playSound, BufferLoader }
