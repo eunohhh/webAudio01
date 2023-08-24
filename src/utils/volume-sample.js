@@ -1,7 +1,9 @@
 export default class VolumeSample {
     constructor(context, loadSounds, button) {
         this.context = context;
-        let list = loadSounds(
+        this.bufferList = [];
+        this.final = [];
+        loadSounds(
             context,
             this,
             { 
@@ -10,13 +12,17 @@ export default class VolumeSample {
                 buffer2 : '/music/01_beautiful, cruel.mp3',
                 buffer3 : '/music/02_aoi bossa.mp3',
                 buffer4 : '/music/03_espana.mp3',
-                buffer5 : '/music/04_spill.mp3'
+                buffer5 : '/music/04_spill.mp3',
+                telephone : '/music/impulse/telephone.wav',
+                muffler : '/music/impulse/muffler.wav',
+                spring : 'music/impulse/spring.wav',
+                echo : 'music/impulse/echo.wav'
             }, 
             this.onLoaded(button)
-            );
-
-        this.bufferList = list;
+        )        
         this.isPlaying = false;
+        this.currentBuffer = null;
+        this.source = null;
         this.currIndex = 0;
         this.startTime = 0;
         this.pauseTime = 0;
@@ -27,7 +33,6 @@ export default class VolumeSample {
         button.removeAttribute('disabled');
     }
 
-    
     playNextTrack(index = 0) {
         if (index >= this.bufferList.length) {
             return; // 모든 트랙을 재생했다면 종료
@@ -35,23 +40,32 @@ export default class VolumeSample {
     
         const buffer = this.bufferList[index];
         const source = this.context.createBufferSource();
-        source.buffer = buffer;
+            source.buffer = buffer;
+        this.currentBuffer = buffer; // 다른 컴포넌트를 위해 buffer 할당
+        this.source = source; // 다른 컴포넌트를 위해 source 도 할당
 
         // 다른 연결 설정 (예: gainNode 등)은 여기서 수행...
-        this.gainNode = this.context.createGain();
+        // Crossfade Gain Node 생성
+        this.crossfadeGainNode = this.context.createGain();
+        // Volume Control Gain Node 생성
+        this.volumeControlGainNode = this.context.createGain();
+
+        // 노드 연결, 연결을 어떤식으로 하고 체인을 만드냐에 따라 결과가 달라질 수 있음
+        source.connect(this.crossfadeGainNode);
+        this.crossfadeGainNode.connect(this.volumeControlGainNode);
+        this.volumeControlGainNode.connect(this.context.destination);
+        
         let currTime = this.context.currentTime;
         this.startTime = currTime; // 시작 시간 기록
         let duration = buffer.duration;
         let fadeTime = 3;
 
-        this.gainNode.gain.linearRampToValueAtTime(0, currTime);
-        this.gainNode.gain.linearRampToValueAtTime(1, currTime + fadeTime);
+        this.crossfadeGainNode.gain.linearRampToValueAtTime(0, currTime);
+        this.crossfadeGainNode.gain.linearRampToValueAtTime(1, currTime + fadeTime);
         // Then fade it out.
-        this.gainNode.gain.linearRampToValueAtTime(1, currTime + duration - fadeTime);
-        this.gainNode.gain.linearRampToValueAtTime(0, currTime + duration);
-    
-        source.connect(this.context.destination);
-    
+        this.crossfadeGainNode.gain.linearRampToValueAtTime(1, currTime + duration - fadeTime);
+        this.crossfadeGainNode.gain.linearRampToValueAtTime(0, currTime + duration);
+        
         source.onended = () => {
             let nextIndex = index + 1
             this.playNextTrack(nextIndex); // 현재 트랙이 끝나면 다음 트랙 재생
@@ -65,7 +79,7 @@ export default class VolumeSample {
         this.currentSource = source; // 현재 재생 중인 source를 저장
         this.isPlaying = true;
 
-        console.log(source)
+        // console.log(source)
     }
 
     stop() {
@@ -138,22 +152,9 @@ export default class VolumeSample {
     }
 
     changeVolume(element) {
-        const volume = element.value;
-        const fraction = parseInt(volume) / parseInt(element.max);
+        const fraction = parseInt(element.value) / parseInt(element.max);
         // Let's use an x*x curve (x-squared) since simple linear (x) does not
         // sound as good.
-        this.gainNode.gain.value = fraction * fraction;
+        this.volumeControlGainNode.gain.value = fraction * fraction;
     }
 }
-
-// this.gainNode = this.context.createGain();
-// this.source = this.context.createBufferSource();
-// this.source.buffer = this.buffer1;        
-
-// // Connect source to a gain node
-// this.source.connect(this.gainNode);
-// // Connect gain node to destination
-// this.gainNode.connect(this.context.destination);
-// // Start playback in a loop
-// this.source.loop = true;
-// this.source[this.source.start ? 'start' : 'noteOn'](0);

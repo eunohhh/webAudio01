@@ -41,10 +41,14 @@ export default class RoomEffectsSample {
             // Make a source node for the sample.
             let source = context.createBufferSource();
             source.buffer = this.buffer;
+
+
             // Make a convolver node for the impulse response.
             let convolver = context.createConvolver();
             convolver.buffer = this.impulseResponseBuffer;
             // Connect the graph.
+
+            
             source.connect(convolver);
             convolver.connect(context.destination);
             // Save references to important nodes.

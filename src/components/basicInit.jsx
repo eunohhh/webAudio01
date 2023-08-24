@@ -3,10 +3,14 @@ import { Button } from '@mui/material'
 import VolumeSample from '../utils/volume-sample';
 import { loadSounds, playSound } from '../utils/shared';
 import Volume from './volume';
+import Room from './room';
+import Filter from './filter';
+import Analyser from './analyser';
 import '../App.css'
 
 export default function BasicInit(){
 
+    const [ play, setPlay ] = useState(false);
     const [ suspended, setSuspended ] = useState(true);
     const [ myAudioContext, setMyAudioContext ] = useState(null);
     const [ volume, setVolume ] = useState(null);
@@ -17,6 +21,7 @@ export default function BasicInit(){
     const handleClick = () => {
         if(volume !== undefined && volume !== null){
             volume.toggle();
+            setPlay(!play);
         }
     };
 
@@ -27,11 +32,12 @@ export default function BasicInit(){
     useEffect(()=>{
         if(suspended === false){
             const context = new AudioContext();
-            setMyAudioContext(context);
 
             if (context.state === 'suspended') setSuspended(true);
             if (!context.createGain) context.createGain = context.createGainNode;
             if (!context.createDelay) context.createDelay = context.createDelayNode;
+
+            setMyAudioContext(context);
 
             context.resume()
             .then(()=>{
@@ -59,9 +65,14 @@ export default function BasicInit(){
                 Play / Pause
             </Button>
 
-            <Volume context={myAudioContext} volume={volume} />
-                
-            
+            {volume && myAudioContext && (
+                <>
+                    <Volume context={myAudioContext} volume={volume} />
+                    <Room context={myAudioContext} volume={volume} />
+                    <Filter context={myAudioContext} volume={volume} play={play}/>
+                    <Analyser context={myAudioContext} volume={volume} play={play} />
+                </>
+            )}       
         </>
 
     )
